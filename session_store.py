@@ -1,18 +1,58 @@
 import json
+from datetime import datetime, timedelta
 from database import conn, cursor
 
+SESSION_TIMEOUT = 60  # seconds
+
+
+def is_session_expired(session):
+    auth_time = session.get("authenticated_at")
+
+    if not auth_time:
+        return True
+
+    try:
+        auth_time = datetime.fromisoformat(auth_time)
+    except:
+        return True
+
+    return datetime.now() - auth_time > timedelta(seconds=SESSION_TIMEOUT)
+
+
 def get_session(session_id):
-    cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
+    cursor.execute(
+        "SELECT * FROM sessions WHERE session_id = ?",
+        (session_id,)
+    )
+
     row = cursor.fetchone()
 
     if row:
-        return {
+        session = {
             "is_authenticated": bool(row[1]),
             "user_id": row[2],
             "data": json.loads(row[3]) if row[3] else {},
             "pending_intent": row[4],
             "current_intent": row[5]
         }
+
+        # add default key if missing
+        if "authenticated_at" not in session["data"]:
+            session["data"]["authenticated_at"] = None
+
+        # session timeout check
+        if session["is_authenticated"] and is_session_expired(session["data"]):
+            session = {
+                "is_authenticated": False,
+                "user_id": None,
+                "data": {},
+                "pending_intent": None,
+                "current_intent": None
+            }
+
+            save_session(session_id, session)
+
+        return session
 
     # create new session
     session = {
@@ -24,12 +64,13 @@ def get_session(session_id):
     }
 
     save_session(session_id, session)
+
     return session
 
 
 def save_session(session_id, session):
     cursor.execute("""
-    INSERT OR REPLACE INTO sessions 
+    INSERT OR REPLACE INTO sessions
     (session_id, is_authenticated, user_id, data, pending_intent, current_intent)
     VALUES (?, ?, ?, ?, ?, ?)
     """, (

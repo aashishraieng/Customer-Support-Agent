@@ -11,6 +11,17 @@ You are an intent classifier.
 Classify the user message into exactly one of:
 [check_balance, view_transactions, block_card, dispute_transaction, faq_query, talk_to_human]
 
+Examples:
+- "what is my balance" → check_balance
+- "how much money do i have" → check_balance
+- "show my transactions" → view_transactions
+- "recent payments" → view_transactions
+- "block my card" → block_card
+- "i lost my card" → block_card
+- "my card is stolen" → block_card
+- "freeze my debit card" → block_card
+- "talk to human" → talk_to_human
+
 Return ONLY the intent name.
 
 Message: {message}
@@ -21,7 +32,24 @@ Message: {message}
             contents=prompt   # ✅ JUST STRING (this is the fix)
         )
 
-        return response.text.strip().lower()
+        intent = response.text.strip().lower()
+        intent = intent.replace(".", "").replace("\n", "").strip()
+
+        # 🔥 strict validation
+        valid_intents = [
+            "check_balance",
+            "view_transactions",
+            "block_card",
+            "dispute_transaction",
+            "faq_query",
+            "talk_to_human"
+        ]
+
+        if intent not in valid_intents:
+            print("⚠️ Invalid intent from model:", intent)
+            return "faq_query"
+
+        return intent
 
     except Exception as e:
         print("LLM ERROR:", e)
@@ -32,6 +60,8 @@ Message: {message}
             return "check_balance"
         elif "transaction" in msg:
             return "view_transactions"
+        elif "block" in msg or "card" in msg:
+            return "block_card"
         elif "human" in msg or "agent" in msg:
             return "talk_to_human"
         else:
