@@ -4,10 +4,22 @@ from session_store import get_session, save_session
 from intent_classifier import detect_intent
 from tools import get_balance, get_transactions
 from datetime import datetime
+from routes.create_user import router as create_user_router
+from routes.get_users import router as get_users_router
 import requests
-
+import random
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# Register Routes
+app.include_router(create_user_router)
+app.include_router(get_users_router)
 
 class ChatRequest(BaseModel):
     message: str
@@ -38,7 +50,7 @@ def chat(req: ChatRequest):
             "session": session
         }
 
-    # 🟠 Cancel current flow
+    # 🟠 Cancel
     if msg == "cancel":
 
         session.update({
@@ -57,7 +69,6 @@ def chat(req: ChatRequest):
     # 🔵 BLOCK CARD FLOW
     if session["pending_intent"] == "block_card":
 
-        # enforce auth
         if not session.get("is_authenticated"):
 
             session["pending_intent"] = "block_card_auth"
@@ -66,11 +77,10 @@ def chat(req: ChatRequest):
             save_session(req.session_id, session)
 
             return {
-                "reply": "Please enter your 8 Digit account number to continue.",
+                "reply": "Please enter your 8 digit account number to continue.",
                 "session": session
             }
 
-        # validate last 4 digits
         if not msg.isdigit() or len(msg) != 4:
 
             reply = "Invalid input. Please enter last 4 digits of your card."
@@ -80,6 +90,7 @@ def chat(req: ChatRequest):
             session["data"]["card_last4"] = msg
 
             try:
+
                 res = requests.post(
                     "http://localhost:5678/webhook/block-card",
                     json={
@@ -91,6 +102,7 @@ def chat(req: ChatRequest):
                 print("n8n status:", res.status_code)
 
             except Exception as e:
+
                 print("n8n error:", e)
 
             reply = "Your request has been submitted. Connecting you to a support agent..."
@@ -112,7 +124,7 @@ def chat(req: ChatRequest):
         "block_card_auth"
     ]:
 
-        # user typed another natural-language query
+        # user typed another request
         if not msg.isdigit():
 
             session["pending_intent"] = None
@@ -125,7 +137,7 @@ def chat(req: ChatRequest):
                 session_id=req.session_id
             ))
 
-        # strict account number validation
+        # validate account number
         if len(msg) != 8:
 
             reply = "Invalid account number. Please try again."
@@ -133,7 +145,16 @@ def chat(req: ChatRequest):
         else:
 
             session["data"]["account_number"] = msg
+
             session["pending_intent"] = "awaiting_otp"
+
+            otp = str(random.randint(100000, 999999))
+
+            session["data"]["otp"] = otp
+
+            session["data"]["otp_created_at"] = datetime.now().isoformat()
+
+            print("DEBUG OTP:", otp)
 
             reply = "6 digit OTP sent to your registered mobile number."
 
@@ -147,7 +168,40 @@ def chat(req: ChatRequest):
     # 🔵 OTP FLOW
     if session["pending_intent"] == "awaiting_otp":
 
-        if msg != "123456":
+        otp_time = session["data"].get("otp_created_at")
+
+        # missing timestamp
+        if not otp_time:
+
+            session["pending_intent"] = None
+
+            save_session(req.session_id, session)
+
+            return {
+                "reply": "OTP expired. Please request a new OTP.",
+                "session": session
+            }
+
+        # convert string → datetime
+        otp_time = datetime.fromisoformat(otp_time)
+
+        # expiry check
+        if (datetime.now() - otp_time).total_seconds() > 60:
+
+            session["pending_intent"] = None
+
+            session["data"].pop("otp", None)
+            session["data"].pop("otp_created_at", None)
+
+            save_session(req.session_id, session)
+
+            return {
+                "reply": "OTP expired. Please start again.",
+                "session": session
+            }
+
+        # validate OTP
+        if msg != session["data"].get("otp"):
 
             reply = "Invalid OTP. Please try again."
 
@@ -155,11 +209,15 @@ def chat(req: ChatRequest):
 
             session["is_authenticated"] = True
 
-            # ⚠️ DEMO ONLY
+            # DEMO ONLY
             session["user_id"] = "user_123"
 
-            # ✅ session timeout timestamp
+            # session login timestamp
             session["data"]["authenticated_at"] = datetime.now().isoformat()
+
+            # clear OTP after use
+            session["data"].pop("otp", None)
+            session["data"].pop("otp_created_at", None)
 
             # continue original intent
             if session.get("current_intent") == "check_balance":
@@ -201,7 +259,7 @@ def chat(req: ChatRequest):
             "session": session
         }
 
-    # 🟢 AI Intent Detection
+    # 🟢 Intent Detection
     intent = detect_intent(msg)
 
     print("INTENT:", intent)
@@ -238,7 +296,7 @@ def chat(req: ChatRequest):
 
             reply = "Please enter your account number."
 
-    # 🟡 Block card
+    # 🟡 Block Card
     elif intent == "block_card":
 
         if not session["is_authenticated"]:
@@ -260,7 +318,7 @@ def chat(req: ChatRequest):
 
         reply = "This is a general banking query."
 
-    # 🟡 Human handoff
+    # 🟡 Human
     elif intent == "talk_to_human":
 
         reply = "Connecting you to a support agent..."
