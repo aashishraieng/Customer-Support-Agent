@@ -9,6 +9,12 @@ from routes.get_users import router as get_users_router
 import requests
 import random
 from fastapi.middleware.cors import CORSMiddleware
+from routes.deposit import router as deposit_router
+from routes.get_balance import router as balance_router
+from routes.withdraw import router as withdraw_router
+from routes.get_transactions import router as transactions_router
+from routes.transfer import router as transfer_router
+from routes.customer_profile import router as customer_router
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -20,7 +26,12 @@ app.add_middleware(
 # Register Routes
 app.include_router(create_user_router)
 app.include_router(get_users_router)
-
+app.include_router(deposit_router)
+app.include_router(balance_router)
+app.include_router(withdraw_router)
+app.include_router(transactions_router)
+app.include_router(transfer_router)
+app.include_router(customer_router)
 class ChatRequest(BaseModel):
     message: str
     session_id: str

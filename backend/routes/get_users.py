@@ -35,6 +35,11 @@ def get_users():
 
             "phone": user["phone"],
 
+            "balance": (
+                account["balance"]
+                if account else 0
+            ),
+
             "account_number": (
                 account["account_number"]
                 if account else "N/A"

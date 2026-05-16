@@ -4,6 +4,7 @@ import API from "../services/api"
 function Users() {
 
     const [users, setUsers] = useState([])
+    const [search, setSearch] = useState("")
 
     const fetchUsers = async () => {
 
@@ -36,6 +37,20 @@ function Users() {
                         <h1 className="text-2xl font-semibold text-black">
                             Bank Customers
                         </h1>
+                        <p className="text-sm text-gray-500">
+                            Total Customers: {users.length}
+                        </p>
+
+                    </div>
+                    <div className="mb-5">
+
+                        <input
+                            type="text"
+                            placeholder="Search by account number..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="border border-gray-300 rounded-lg px-4 py-2 text-sm w-72"
+                        />
 
                     </div>
 
@@ -59,6 +74,9 @@ function Users() {
                                         Phone
                                     </th>
                                     <th className="p-4 text-sm font-semibold">
+                                        Balance
+                                    </th>
+                                    <th className="p-4 text-sm font-semibold">
                                         Account Number
                                     </th>
 
@@ -72,34 +90,43 @@ function Users() {
 
                             <tbody>
 
-                                {users.map((user) => (
+                                {users
+                                    .filter(user =>
+                                        (user.account_number || "")
+                                            .toString()
+                                            .includes(search.trim())
+                                    )
+                                    .map((user) => (
 
-                                    <tr
-                                        key={user.id}
-                                        className="border-b border-gray-200"
-                                    >
+                                        <tr
+                                            key={user.id}
+                                            className="border-b border-gray-200"
+                                        >
 
-                                        <td className="p-4 text-sm">
-                                            {user.name}
-                                        </td>
+                                            <td className="p-4 text-sm">
+                                                {user.name}
+                                            </td>
 
-                                        <td className="p-4 text-sm">
-                                            {user.email}
-                                        </td>
+                                            <td className="p-4 text-sm">
+                                                {user.email}
+                                            </td>
 
-                                        <td className="p-4 text-sm">
-                                            {user.phone}
-                                        </td>
-                                        <td className="p-4 text-sm">
-                                            {user.account_number}
-                                        </td>
+                                            <td className="p-4 text-sm">
+                                                {user.phone}
+                                            </td>
+                                            <td className="p-4 text-sm">
+                                                ₹ {user.balance}
+                                            </td>
+                                            <td className="p-4 text-sm">
+                                                {user.account_number}
+                                            </td>
 
-                                        <td className="p-4 text-sm">
-                                            {user.card_number}
-                                        </td>
+                                            <td className="p-4 text-sm">
+                                                {user.card_number}
+                                            </td>
 
-                                    </tr>
-                                ))}
+                                        </tr>
+                                    ))}
 
                             </tbody>
 

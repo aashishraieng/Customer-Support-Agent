@@ -1,73 +1,200 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
 function Login() {
 
     const navigate = useNavigate()
 
+    const [role, setRole] = useState("customer")
+
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState("")
+
+
+    const handleLogin = (e) => {
+
+        e.preventDefault()
+
+
+        // Employee login
+
+        if (
+
+            role === "employee"
+
+            &&
+
+            username.toLowerCase() ===
+            "ashish rai"
+
+            &&
+
+            password ===
+            "ashishrai@123"
+
+        ) {
+
+            navigate("/dashboard")
+
+            return
+        }
+
+
+
+        // Customer demo login
+
+        if (
+
+            role === "customer"
+
+            &&
+
+            password === "1234"
+
+        ) {
+
+            localStorage.setItem(
+                "accountNumber",
+                username
+            )
+
+            navigate(
+                "/customer-dashboard"
+            )
+
+            return
+        }
+
+
+        alert(
+            "Invalid credentials"
+        )
+
+    }
+
+
+
     return (
-        <div className="min-h-screen bg-sky-50 flex items-center justify-center px-4">
 
-            <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-sm border border-gray-200">
+        <div className="min-h-screen bg-sky-50 flex items-center justify-center">
 
-                {/* Heading */}
-                <div className="mb-8 text-center">
+            <div className="bg-white p-8 rounded-2xl shadow w-full max-w-md">
 
-                    <h1 className="text-2xl font-semibold text-black mb-2">
-                        Aaam Aadami Bank
-                    </h1>
+                <h1 className="text-2xl font-bold text-center mb-2">
 
-                    <p className="text-sm text-gray-500">
-                        Secure Banking Login
-                    </p>
+                    Aaam Aadami Bank
 
-                </div>
+                </h1>
 
-                {/* Form */}
+                <p className="text-center text-gray-500 mb-8">
+
+                    Login Portal
+
+                </p>
+
+
                 <form
+                    onSubmit={handleLogin}
                     className="space-y-5"
-                    onSubmit={(e) => {
-                        e.preventDefault()
-                        navigate("/dashboard")
-                    }}
                 >
 
-                    {/* Email */}
-                    <div>
 
-                        <label className="block text-sm font-medium text-black mb-2">
-                            Email
-                        </label>
+                    <select
 
-                        <input
-                            type="email"
-                            placeholder="Enter your email"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-sky-400"
-                        />
+                        value={role}
 
-                    </div>
+                        onChange={(e) =>
+                            setRole(
+                                e.target.value
+                            )
+                        }
 
-                    {/* Password */}
-                    <div>
-
-                        <label className="block text-sm font-medium text-black mb-2">
-                            Password
-                        </label>
-
-                        <input
-                            type="password"
-                            placeholder="Enter your password"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:border-sky-400"
-                        />
-
-                    </div>
-
-                    {/* Login Button */}
-                    <button
-                        type="submit"
-                        className="w-full bg-black text-white py-3 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+                        className="w-full border p-3 rounded-lg"
                     >
+
+                        <option value="customer">
+
+                            Customer
+
+                        </option>
+
+                        <option value="employee">
+
+                            Employee
+
+                        </option>
+
+                    </select>
+
+
+
+                    <input
+
+                        type="text"
+
+                        value={username}
+
+                        onChange={(e) =>
+                            setUsername(
+                                e.target.value
+                            )
+                        }
+
+                        placeholder={
+
+                            role === "employee"
+
+                                ?
+
+                                "Employee Name"
+
+                                :
+
+                                "Account Number"
+
+                        }
+
+                        className="w-full border p-3 rounded-lg"
+
+                    />
+
+
+
+                    <input
+
+                        type="password"
+
+                        value={password}
+
+                        onChange={(e) =>
+                            setPassword(
+                                e.target.value
+                            )
+                        }
+
+                        placeholder="Password"
+
+                        className="w-full border p-3 rounded-lg"
+
+                    />
+
+
+                    <button
+
+                        className="
+                        w-full
+                        bg-black
+                        text-white
+                        py-3
+                        rounded-lg
+                        "
+
+                    >
+
                         Login
+
                     </button>
+
 
                 </form>
 

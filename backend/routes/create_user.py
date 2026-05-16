@@ -30,7 +30,8 @@ def create_user(data: dict):
     user_data = {
         "name": data["name"],
         "email": data["email"],
-        "phone": data["phone"]
+        "phone": data["phone"],
+        "password": "1234"
     }
 
     user_result = users_collection.insert_one(user_data)
